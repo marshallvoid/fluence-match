@@ -691,3 +691,4 @@ qdrant_storage
 /*.ipynb
 data_for_ai/*.csv
 notebooks/
+storage/
