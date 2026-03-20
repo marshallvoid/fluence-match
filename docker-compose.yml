@@ -1,0 +1,84 @@
+services:
+   api:
+      container_name: fluence-match_api
+      build: .
+      ports:
+         - "8000:8000"
+      depends_on:
+         # - qdrant
+         - redis
+         - nats
+      links:
+         - nats
+
+   worker:
+      container_name: fluence-match_worker
+      build: .
+      depends_on:
+         - nats
+         # - qdrant
+         - redis
+      entrypoint: ["match", "worker"]
+      links:
+         - nats
+
+   # neo4j:
+   #     image: neo4j:latest
+   #     volumes:
+   #         - /$HOME/neo4j/logs:/logs
+   #         - /$HOME/neo4j/config:/config
+   #         - /$HOME/neo4j/data:/data
+   #         - /$HOME/neo4j/plugins:/plugins
+   #     environment:
+   #       - 'NEO4J_AUTH=${NEO4J_AUTH:-neo4j/1234}'
+   #     ports:
+   #       - "7474:7474"
+   #       - "7687:7687"
+   #     restart: always
+
+   # services:
+   #   neo4j:
+   #     container_name: neo4j
+   #     image: neo4j:latest
+   #     ports:
+   #       - 7474:7474
+   #       - 7687:7687
+   #     environment:
+   #       - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-1234}
+   #       - NEO4J_apoc_export_file_enabled=true
+   #       - NEO4J_apoc_import_file_enabled=true
+   #       - NEO4J_apoc_import_file_use__neo4j__config=true
+   #       - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+   #     volumes:
+   #       - ./neo4j_db/data:/data
+   #       - ./neo4j_db/logs:/logs
+   #       - ./neo4j_db/import:/var/lib/neo4j/import
+   #       - ./neo4j_db/plugins:/plugins
+
+   redis:
+      container_name: redis
+      image: "bitnami/redis:7.2"
+      restart: on-failure
+      environment:
+         - "REDIS_PASSWORD=${REDIS_PASSWORD:-1234}"
+         - "REDIS_PORT_NUMBER=${REDIS_PORT:-6379}"
+
+   nats:
+      container_name: nats
+      image: "nats:2.10"
+      restart: on-failure
+      environment:
+         - "NATS_PORT=${NATS_PORT:-4222}"
+         - "NATS_HTTP_PORT=${NATS_HTTP_PORT:-8222}"
+      ports:
+         - "4222:4222"
+         - "8222:8222"
+      command:
+         - "--http_port=8222"
+         - "--js"
+         - "--sd=/data"
+      volumes:
+         - nats_data:/data
+
+volumes:
+   nats_data: {}
